@@ -11,7 +11,7 @@ namespace Dungeon
 
         public Room(Level l)
         {
-            bounds = new RectInt(l.bounds.position, l.bounds.size);
+            bounds = new RectInt(-l.width / 2, -l.height / 2, l.width, l.height);
         }
 
         public Room(int x, int y, int w, int h)

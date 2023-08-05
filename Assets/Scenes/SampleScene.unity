@@ -307,13 +307,13 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e9880e90f1ac4bae83cdb2d36e5236f5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  y: 15
-  distance: 20
+  y: 20
+  distance: 30
 --- !u!1 &1799738622
 GameObject:
   m_ObjectHideFlags: 0
@@ -345,15 +345,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   unitCube: {fileID: 2191843762893048974, guid: 1137bb64f2fddc646b49f2faf1240433, type: 3}
   level:
-    bounds:
-      x: -15
-      y: -15
-      width: 30
-      height: 30
-    range: 10
+    width: 100
+    height: 100
+    range: 100
     count: 10
-    offset: 1
-    segments: 5
+    offset: 4
+    segments: 6
   seed: 1
 --- !u!4 &1799738624
 Transform:

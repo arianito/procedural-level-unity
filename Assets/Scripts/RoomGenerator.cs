@@ -1,8 +1,6 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
+using System.Diagnostics;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 using Random = System.Random;
 
 namespace Dungeon
@@ -21,47 +19,45 @@ namespace Dungeon
 
         private void Start()
         {
-            StartCoroutine(Loop());
+            Generate();
+        }
+
+        private void Update()
+        {
+            if (Input.GetButtonDown("Jump"))
+            {
+                Stopwatch sw = new Stopwatch();
+
+                sw.Start();
+                Generate();
+                sw.Stop();
+                Debug.Log($"elapsed: {sw.ElapsedMilliseconds}ms");
+            }
         }
 
         private void OnDrawGizmos()
         {
-            var i = 0;
-            _trig?.MST.ForEach(
-                edge =>
-                {
-                    edge.Debug(1 + (i++) / (float)level.count / 2.0f);
-                }
-            );
+            Gizmos.color = Color.cyan;
+            _trig?.MST.ForEach(edge => edge.Debug(0));
+
+            Gizmos.color = Color.black;
+
+            _trig?.Outline.ForEach(edge => edge.Debug(1));
         }
 
 
-        private IEnumerator Loop()
+        private void Generate()
         {
-            while (true)
-            {
-                _rand = new Random(seed);
-                _complex = new Complex(level, seed ++);
-                _complex.Generate();
+            _rand = new Random(seed);
+            _complex = new Complex(level, seed);
+            _complex.Generate();
 
-                RenderRooms();
+            RenderRooms();
 
-                _trig = new Delaunay(_complex.rooms);
-                _trig.Triangulate();
-
-                yield return new WaitForSeconds(1.0f);
-            }
+            _trig = new Delaunay(_complex.rooms);
+            _trig.Triangulate();
         }
 
-
-        private void PlaceCube(Vector2Int location, Vector2Int size, float z, Color color)
-        {
-            GameObject go =
-                Instantiate<GameObject>(unitCube, new Vector3(location.x, z, location.y), Quaternion.identity,
-                    transform);
-            go.GetComponent<Transform>().localScale = new Vector3(size.x,  1 + (int)_rand.NextDouble(), size.y);
-            go.GetComponent<MeshRenderer>().material.color = color;
-        }
 
         private void RenderRooms()
         {
@@ -70,12 +66,19 @@ namespace Dungeon
                 Destroy(transform.GetChild(i).gameObject);
             }
 
-            var max = _complex.rooms.Max(r => r.bounds.center.magnitude);
-
             _complex.rooms.ForEach(r =>
-                PlaceCube(r.bounds.position, r.bounds.size, 0,
-                    Color.Lerp(Color.red, Color.blue,
-                        Mathf.Clamp01(r.bounds.center.magnitude / max))));
+                PlaceCube(r.bounds.position, r.bounds.size, 0));
+        }
+
+        private void PlaceCube(Vector2Int location, Vector2Int size, float z)
+        {
+            var go = Instantiate(
+                unitCube,
+                new Vector3(location.x, z, location.y),
+                Quaternion.identity,
+                transform
+            );
+            go.transform.localScale = new Vector3(size.x, 1 + (float)_rand.NextDouble(), size.y);
         }
     }
 }
