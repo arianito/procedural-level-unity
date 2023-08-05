@@ -10,11 +10,13 @@ namespace Dungeon
         private List<Triangle> _triangles;
         private List<Edge> _edges;
         private List<Edge> _mst;
+        private List<Edge> _outline;
         private Dictionary<Vector2, Vector2> _parent;
 
         public List<Triangle> Triangles => _triangles;
         public List<Edge> Edges => _edges;
         public List<Edge> MST => _mst;
+        public List<Edge> Outline => _outline;
 
 
         public Delaunay(List<Room> rooms)
@@ -85,6 +87,18 @@ namespace Dungeon
             var edgeSet = new HashSet<Edge>();
             _triangles.ForEach(t => t.GetEdges().ForEach(edge => edgeSet.Add(edge)));
             _edges = edgeSet.ToList();
+
+            // get outline
+            var outlineSet = new HashSet<Edge>();
+            _triangles.ForEach(t => t.GetEdges().ForEach(edge =>
+            {
+                var scale = 1f;
+                var e = new Edge(edge.A * scale, edge.B * scale);
+                if (outlineSet.Contains(e))
+                    outlineSet.Remove(e);
+                else outlineSet.Add(e);
+            }));
+            _outline = outlineSet.ToList();
 
             MinimumSpanningTreePrim();
         }
