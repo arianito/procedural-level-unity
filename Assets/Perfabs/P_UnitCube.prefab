@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 2191843762893048973}
   - component: {fileID: 2191843762893048972}
   m_Layer: 0
-  m_Name: Maze
+  m_Name: P_UnitCube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
