@@ -29,9 +29,9 @@ namespace Dungeon
             return distance <= radius;
         }
 
-        public void Debug(float z)
+        public void DebugDraw(Vector3 pos)
         {
-            GetEdges().ForEach(edge => edge.Debug(z));
+            GetEdges().ForEach(edge => edge.DebugDraw(pos));
         }
 
         private Vector2 GetCenter()

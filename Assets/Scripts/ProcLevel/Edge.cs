@@ -19,11 +19,11 @@ namespace Dungeon
             _length = Vector2.Distance(_a, _b);
         }
 
-        public void Debug(float z)
+        public void DebugDraw(Vector3 position)
         {
             Gizmos.DrawLine(
-                new Vector3(_a.x, z, _a.y),
-                new Vector3(_b.x, z, _b.y)
+                position + new Vector3(_a.x, 0, _a.y),
+                position + new Vector3(_b.x, 0, _b.y)
             );
         }
 
