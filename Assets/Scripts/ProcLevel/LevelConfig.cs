@@ -14,7 +14,6 @@ namespace Dungeon
         public int count = 10;
         public int offset = 4;
         public float segments = 6;
-        public int seed = 1;
         public int division = 1;
     }
 }

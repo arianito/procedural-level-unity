@@ -7,23 +7,16 @@ namespace Dungeon
 {
     public class ProceduralLevel
     {
-        public readonly LevelConfig config;
         public readonly Random random;
         public List<Room> rooms;
 
-        public List<Edge> mst;
-        public MeshGrid meshGrid;
         public List<PathFinder> finder;
 
 
-        public ProceduralLevel(LevelConfig c)
+        public ProceduralLevel(LevelConfig config, int seed)
         {
-            config = c;
-            random = new Random(c.seed);
-        }
-
-        public void Generate()
-        {
+            random = new Random(seed);
+            
             rooms = RoomUtils.Generate(random, config);
 
             RoomUtils.ReCenter(rooms);
@@ -34,7 +27,7 @@ namespace Dungeon
 
             var (room1, room2) = RoomUtils.FindFurthestRooms(rooms);
 
-            mst = Delaunay.MinimumSpanningTreePrim(edges, room1.bounds.center);
+            var mst = Delaunay.MinimumSpanningTreePrim(edges, room1.bounds.center);
 
             triangles.ForEach(t => t.GetEdges().ForEach(e =>
             {
@@ -43,7 +36,7 @@ namespace Dungeon
                     mst.Add(e);
             }));
 
-            meshGrid = new MeshGrid(rooms, random, config.division);
+            var meshGrid = new MeshGrid(rooms, random, config.division);
             finder = new List<PathFinder>();
 
             foreach (var edge in mst)
