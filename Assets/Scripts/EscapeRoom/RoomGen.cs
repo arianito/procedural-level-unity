@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using RBush;
+using RTree;
 using UnityEngine;
 using Random = System.Random;
 
@@ -41,12 +41,24 @@ namespace EscapeRoom
         }
     }
 
-    public class Point : ISpatialData
+    public class BBoxData : ISpatialData
     {
-        public Point(Envelope envelope) => _envelope = envelope;
+        public BoundingBox BBox { get; }
 
-        private readonly Envelope _envelope;
-        public ref readonly Envelope Envelope => ref _envelope;
+        public BBoxData(float minX, float minY, float maxX, float maxY)
+        {
+            BBox = new BoundingBox(minX, minY, maxX, maxY);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is BBoxData other && BBox.Equals(other.BBox);
+        }
+
+        public override int GetHashCode()
+        {
+            return BBox.GetHashCode();
+        }
     }
 
     public class RoomGen
@@ -66,28 +78,17 @@ namespace EscapeRoom
             Boundaries = boundaries;
             Offset = offset;
             _random = random;
-            // CreateLevel(0, 1);
+             CreateLevel(0, 1);
 
-
-            var bush = new RBush<Point>();
-
-            bush.Insert(new Point(new Envelope(0, 0, 9, 9)));
-            bush.Insert(new Point(new Envelope(10, 10, 20, 20)));
-
-            var p = bush.Search(new Envelope(10, 10, 20, 20));
-            Debug.Log(p.Count);
-            
             CalculateBBox();
         }
 
         private void CreateLevel(int level, int height)
         {
+            var bush = new RBush();
             for (var i = 0; i < 10; i++)
             {
-                for (var a = 0; a < 5; a++)
-                {
-                    var room = CreateRandomRoom(level, height, 2, 6);
-                }
+                
             }
         }
 
