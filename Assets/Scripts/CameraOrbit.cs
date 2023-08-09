@@ -5,11 +5,8 @@ namespace Dungeon
 {
     public class CameraOrbit : MonoBehaviour
     {
-
-
         public float y = 10;
         public float distance = 20;
-
         public float speed = 0.5f;
         
         

@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Dungeon;
 using UnityEngine;
 using Random = System.Random;
 
@@ -50,7 +51,7 @@ namespace Dungeon
             _meshGrid = new MeshGrid(_roomGen.BBox, _random);
 
             AStar.DefineMeshGrid(_meshGrid, _roomGen.Rooms);
-            
+
             var edges = Triangulation.Triangulate(
                 _roomGen.Rooms.Select(r => r.Center).ToList()
             );
@@ -60,10 +61,10 @@ namespace Dungeon
             _graph = useKruscals
                 ? Triangulation.FindMinimumSpanningTreeKruscals(edges)
                 : Triangulation.MinimumSpanningTreePrim(edges, room1.Center);
-            
+
             foreach (var edge in edges)
             {
-                if(_random.NextDouble() < (level.loopChance / 100.0f))
+                if (_random.NextDouble() < (level.loopChance / 100.0f))
                     if (!_graph.Contains(edge))
                         _graph.Add(edge);
             }

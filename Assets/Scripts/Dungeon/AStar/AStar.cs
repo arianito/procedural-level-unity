@@ -158,31 +158,6 @@ namespace Dungeon
             return nodes;
         }
 
-        public static MeshNode GetSocketFacing(MeshGrid grid, Room a, Vector3 b)
-        {
-            var sockets = GetAllSockets(grid, a);
-            if (sockets.Count == 0)
-                return null;
-
-            var dir = (b - a.WorldPosition).normalized;
-            var center = new Vector3(a.Center.x, a.WorldPosition.y + 0.5f, a.Center.z);
-            MeshNode candidate = null;
-            var minValue = -1f;
-            foreach (var socket in sockets)
-            {
-                var sc = socket.WorldPosition + socket.WorldScale / 2;
-                var normal = (sc - center).normalized;
-                var scale = Mathf.Clamp01(Vector3.Dot(dir, normal));
-
-                if (!(scale > minValue)) continue;
-
-                minValue = scale;
-                candidate = socket;
-            }
-
-            return candidate;
-        }
-
         private static List<MeshNode> Retrace(MeshNode end, MeshNode startNode)
         {
             var nodes = new List<MeshNode>();

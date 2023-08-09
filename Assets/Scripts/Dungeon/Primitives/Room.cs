@@ -4,15 +4,8 @@ namespace Dungeon
 {
     public class Room
     {
-        public Room(Vector3Int worldPosition, Vector3 worldScale)
-        {
-            WorldPosition = worldPosition;
-            WorldScale = worldScale;
-        }
-
         public Vector3Int WorldPosition { get; }
         public Vector3 WorldScale { get; }
-
         public Vector3Int Min => WorldPosition;
 
 
@@ -26,17 +19,15 @@ namespace Dungeon
 
         public Vector3 Center => WorldPosition + new Vector3(WorldScale.x, WorldScale.y, WorldScale.z) / 2.0f;
 
+        public BoundingBox BBox => new BoundingBox(Min, Max);
 
-        public BoundingBox3D BBox => new BoundingBox3D(Min, Max);
 
-        public override bool Equals(object obj)
+        public Room(Vector3Int worldPosition, Vector3 worldScale)
         {
-            return obj is Room other && other.WorldPosition.Equals(WorldPosition);
-        }
-
-        public override int GetHashCode()
-        {
-            return WorldPosition.GetHashCode();
+            WorldPosition = worldPosition;
+            WorldScale = worldScale;
+            worldScale.x = Mathf.CeilToInt(worldScale.x);
+            worldScale.z = Mathf.CeilToInt(worldScale.z);
         }
 
         public bool Intersects(Room other)
@@ -47,6 +38,16 @@ namespace Dungeon
                    Min.x < other.Max.x &&
                    Min.y < other.Max.y &&
                    Min.z < other.Max.z;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is Room other && other.WorldPosition.Equals(WorldPosition);
+        }
+
+        public override int GetHashCode()
+        {
+            return WorldPosition.GetHashCode();
         }
     }
 }

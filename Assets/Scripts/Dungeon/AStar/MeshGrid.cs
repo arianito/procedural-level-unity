@@ -59,10 +59,10 @@ namespace Dungeon
 
     public class MeshGrid
     {
-        private readonly BoundingBox3D _bbox;
+        private readonly BoundingBox _bbox;
         public readonly MeshNode[,,] Nodes;
 
-        public MeshGrid(BoundingBox3D bbox, Random random)
+        public MeshGrid(BoundingBox bbox, Random random)
         {
             Random = random;
             _bbox = bbox;
@@ -104,7 +104,6 @@ namespace Dungeon
                 (int)pos.z
             );
         }
-
 
         public List<MeshNode> GetNeighbors(MeshNode node)
         {
