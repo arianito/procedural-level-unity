@@ -21,8 +21,7 @@ namespace Dungeon
         public int count = 7;
         public int countVariation = 3;
 
-
-        public float loopChance = 10;
+        public float loopChance = 2;
     }
 
     public class RoomGen

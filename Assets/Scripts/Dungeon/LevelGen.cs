@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -49,7 +50,7 @@ namespace Dungeon
             _meshGrid = new MeshGrid(_roomGen.BBox, _random);
 
             AStar.DefineMeshGrid(_meshGrid, _roomGen.Rooms);
-
+            
             var edges = Triangulation.Triangulate(
                 _roomGen.Rooms.Select(r => r.Center).ToList()
             );
@@ -142,7 +143,7 @@ namespace Dungeon
         {
             while (true)
             {
-                yield return new WaitForSeconds(2);
+                yield return new WaitForSeconds(5);
                 Generate();
             }
         }

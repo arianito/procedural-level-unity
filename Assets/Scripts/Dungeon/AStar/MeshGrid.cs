@@ -17,7 +17,7 @@ namespace Dungeon
         private MeshNode _value;
         public MeshGrid Owner { get; set; }
         public Vector3Int GridIndex { get; set; }
-        public bool IsWalkable { get; set; }
+        public bool IsWalkable { get; internal set; }
 
         public NodeType Type { get; set; }
         public MeshNode Previous { get; set; }
@@ -34,6 +34,12 @@ namespace Dungeon
 
 
         public int HeapIndex { get; set; }
+
+
+        public void SetWalkable(bool walkable)
+        {
+            IsWalkable = walkable;
+        }
 
         public int CompareTo(MeshNode nodeToCompare)
         {
@@ -77,7 +83,7 @@ namespace Dungeon
                     IsWalkable = true,
                     GridIndex = new Vector3Int(i, j, k),
                     WorldPosition = position,
-                    WorldScale = scale
+                    WorldScale = scale,
                 };
             }
         }
@@ -124,18 +130,6 @@ namespace Dungeon
                       final.z < GridSize.z
                 select Nodes[final.x, final.y, final.z]
             ).ToList();
-        }
-
-
-        public void DebugDraw()
-        {
-            foreach (var node in Nodes)
-            {
-                Gizmos.color = node.IsWalkable
-                    ? Color.gray
-                    : Color.red;
-                node.DebugDraw();
-            }
         }
     }
 }

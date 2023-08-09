@@ -56,28 +56,11 @@ namespace Dungeon
             var dy = Mathf.Abs(a.Center.y - b.Center.y);
             var dz = Mathf.Abs(a.Center.z - b.Center.z);
 
-            var c1 = 0.0f;
-            var c2 = 0.0f;
-            if (dx > dy)
-            {
-                c1 = 14.0f * dy + 10 * (dx - dy);
-            }
-            else
-            {
-                c1 = 14.0f * dx + 10 * (dy - dx);
-            }
+            var xy = Mathf.Sqrt(2) * Mathf.Min(dx, dy) + Mathf.Abs(dx - dy);
+            var zy = Mathf.Sqrt(2) * Mathf.Min(dz, dy) + Mathf.Abs(dz - dy);
 
-            if (dz > dy)
-            {
-                c2 = 14.0f * dy + 10 * (dz - dy);
-            }
-            else
-            {
-                c2 = 14.0f * dz + 10 * (dy - dz);
-            }
 
-            var cost = Mathf.Min((c1 + 10 * dz), (c2 + 10 * dx));
-
+            var cost = Mathf.Min((xy + dz), (zy + dx));
             if (b.Type == NodeType.Room)
                 cost += 10;
             else if (b.Type == NodeType.Empty)
@@ -206,7 +189,7 @@ namespace Dungeon
             var node = end;
             while (true)
             {
-                node.IsWalkable = false;
+                node.SetWalkable(false);
                 node.Type = NodeType.Hallway;
                 nodes.Add(node);
                 if (node == startNode) break;
@@ -228,7 +211,10 @@ namespace Dungeon
                 for (var i = 0; i < size.x; i++)
                 for (var j = 0; j < size.y; j++)
                 for (var k = 0; k < size.z; k++)
-                    grid.Nodes[pos.x + i, pos.y + j, pos.z + k].IsWalkable = false;
+                {
+                    var node = grid.Nodes[pos.x + i, pos.y + j, pos.z + k];
+                    node.SetWalkable(false);
+                }
             }
         }
     }
