@@ -9,7 +9,7 @@ namespace Dungeon
     {
         Empty,
         Room,
-        Hallway
+        Hallway,
     }
 
     public class MeshNode : IHeapNode<MeshNode>
@@ -32,9 +32,10 @@ namespace Dungeon
 
         public Vector3 Center => WorldPosition + WorldScale / 2.0f;
 
+        public MeshNode Above => Owner[GridIndex.x, GridIndex.y + 1, GridIndex.z];
+        public MeshNode Below => Owner[GridIndex.x, GridIndex.y - 1, GridIndex.z];
 
         public int HeapIndex { get; set; }
-
 
         public void SetWalkable(bool walkable)
         {
@@ -46,6 +47,45 @@ namespace Dungeon
             var compare = FCost.CompareTo(nodeToCompare.FCost);
             if (compare == 0) compare = HCost.CompareTo(nodeToCompare.HCost);
             return compare;
+        }
+
+
+        public List<MeshNode> GetNeighbours(bool diagonals = false)
+        {
+            var offsets = diagonals
+                ? new[]
+                {
+                    new Vector3Int(-1, 0, 0),
+                    new Vector3Int(1, 0, 0),
+                    new Vector3Int(0, -1, 0),
+                    new Vector3Int(0, 1, 0),
+                    new Vector3Int(0, 0, -1),
+                    new Vector3Int(0, 0, 1),
+                    
+                    new Vector3Int(1, 0, 1),
+                    new Vector3Int(-1, 0, -1),
+                    new Vector3Int(1, 0, -1),
+                    new Vector3Int(-1, 0, 1)
+                }
+                : new[]
+                {
+                    new Vector3Int(-1, 0, 0),
+                    new Vector3Int(1, 0, 0),
+                    new Vector3Int(0, -1, 0),
+                    new Vector3Int(0, 1, 0),
+                    new Vector3Int(0, 0, -1),
+                    new Vector3Int(0, 0, 1)
+                };
+
+            return (
+                from offset in offsets
+                select GridIndex + offset
+                into final
+                select Owner[final.x, final.y, final.z]
+                into neighbour
+                where neighbour != null
+                select neighbour
+            ).ToList();
         }
 
 
@@ -95,6 +135,12 @@ namespace Dungeon
         public int MaxSize => GridSize.x * GridSize.y * GridSize.z;
 
 
+        public MeshNode this[int i, int j, int k] => !IsValidIndices(i, j, k) ? null : Nodes[i, j, k];
+
+        public MeshNode this[Vector3Int index] =>
+            !IsValidIndices(index.x, index.y, index.z) ? null : Nodes[index.x, index.y, index.z];
+
+
         public Vector3Int WorldToNodeSpace(Vector3 position)
         {
             var pos = position - _bbox.Min;
@@ -105,30 +151,14 @@ namespace Dungeon
             );
         }
 
-        public List<MeshNode> GetNeighbors(MeshNode node)
+        public bool IsValidIndices(int i, int j, int k)
         {
-            var offsets = new[]
-            {
-                new Vector3Int(-1, 0, 0),
-                new Vector3Int(1, 0, 0),
-                new Vector3Int(0, -1, 0),
-                new Vector3Int(0, 1, 0),
-                new Vector3Int(0, 0, -1),
-                new Vector3Int(0, 0, 1)
-            };
-
-            return (
-                from offset in offsets
-                select node.GridIndex + offset
-                into final
-                where final.x >= 0 &&
-                      final.x < GridSize.x &&
-                      final.y >= 0 &&
-                      final.y < GridSize.y &&
-                      final.z >= 0 &&
-                      final.z < GridSize.z
-                select Nodes[final.x, final.y, final.z]
-            ).ToList();
+            return i >= 0 &&
+                   i < GridSize.x &&
+                   j >= 0 &&
+                   j < GridSize.y &&
+                   k >= 0 &&
+                   k < GridSize.z;
         }
     }
 }

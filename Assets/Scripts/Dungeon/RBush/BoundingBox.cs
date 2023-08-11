@@ -44,6 +44,12 @@ namespace Dungeon
                 new Vector3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity)
             );
 
+        public BoundingBox Expand(int offset) =>
+            new BoundingBox(
+                Min - Vector3.one * offset,
+                Max + Vector3.one * offset
+            );
+
         public static BoundingBox Empty => new BoundingBox(new Vector3(0, 0, 0), new Vector3(0, 0, 0));
 
         

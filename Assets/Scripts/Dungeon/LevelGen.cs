@@ -12,6 +12,7 @@ namespace Dungeon
     {
         public GameObject unitCube;
         public GameObject hallwayCube;
+        public GameObject stairsCube;
 
         public Vector3Int boundaries = new Vector3Int(10, 5, 10);
         public int seed = 1;
@@ -25,6 +26,7 @@ namespace Dungeon
         private MeshGrid _meshGrid;
         private Random _random;
         private RoomGen _roomGen;
+        private HashSet<Edge> _edges;
 
 
         private void Start()
@@ -37,7 +39,7 @@ namespace Dungeon
         {
             if (Input.GetButtonDown("Jump"))
             {
-                // seed++;
+                seed++;
                 Generate();
             }
         }
@@ -47,22 +49,26 @@ namespace Dungeon
             _random = new Random(seed);
 
             _roomGen = new RoomGen(boundaries, _random, level);
+            
+            if(_roomGen.Rooms.Count == 0)
+                return;
 
-            _meshGrid = new MeshGrid(_roomGen.BBox, _random);
+            _meshGrid = new MeshGrid(_roomGen.BBox.Expand(2), _random);
 
             AStar.DefineMeshGrid(_meshGrid, _roomGen.Rooms);
 
-            var edges = Triangulation.Triangulate(
-                _roomGen.Rooms.Select(r => r.Center).ToList()
+            _edges = Triangulation.Triangulate(
+                _roomGen.Rooms.Select(r => r.WorldPosition).ToList()
             );
+            
 
-            var (room1, room2) = _roomGen.FindFurthestRooms();
+            var startRoom = _roomGen.Rooms[0];
 
             _graph = useKruscals
-                ? Triangulation.FindMinimumSpanningTreeKruscals(edges)
-                : Triangulation.MinimumSpanningTreePrim(edges, room1.Center);
+                ? Triangulation.FindMinimumSpanningTreeKruscals(_edges)
+                : Triangulation.MinimumSpanningTreePrim(_edges, startRoom.WorldPosition);
 
-            foreach (var edge in edges)
+            foreach (var edge in _edges)
             {
                 if (_random.NextDouble() < (level.loopChance / 100.0f))
                     if (!_graph.Contains(edge))
@@ -87,26 +93,60 @@ namespace Dungeon
             RenderRooms(transform);
         }
 
+        private void OnDrawGizmos()
+        {
+            Gizmos.matrix = transform.localToWorldMatrix;
+            //
+            // if (_meshGrid != null)
+            // {
+            //     foreach (var node in _meshGrid.Nodes)
+            //     {
+            //         Gizmos.color = node.IsWalkable ? Color.gray : Color.red;
+            //         node.DebugDraw(0.8f, !node.IsWalkable);
+            //     }
+            // }
+            // Gizmos.color = Color.white;
+            // if (_edges != null)
+            // {
+            //     foreach (var edge in _edges)
+            //     {
+            //         edge.DebugDraw();
+            //     }
+            // }
+
+            if (_graph != null)
+            {
+                Gizmos.color = Color.red;
+                foreach (var edge in _graph)
+                {
+                    edge.DebugDraw();
+                }
+            }
+        }
 
         private void RenderRooms(Transform superParent)
         {
             var roomIndex = 0;
             foreach (var r in _roomGen.Rooms)
-                PlaceCube(
-                    $"room{roomIndex++}",
-                    unitCube,
-                    superParent,
-                    new Vector3(r.WorldPosition.x, r.WorldPosition.y, r.WorldPosition.z),
-                    new Vector3(r.WorldScale.x, r.WorldScale.y, r.WorldScale.z)
-                );
+                if(_graph.Any(e => e.HasVertex(r.WorldPosition)))
+                    PlaceCube(
+                        $"room{roomIndex++}",
+                        unitCube,
+                        superParent,
+                        new Vector3(r.WorldPosition.x, r.WorldPosition.y, r.WorldPosition.z),
+                        new Vector3(r.WorldScale.x, r.WorldScale.y, r.WorldScale.z)
+                    );
 
             var hallwayId = 0;
             foreach (var hallway in _hallways)
             {
                 var parent = superParent;
                 var hallwayIndex = hallwayId++;
-                foreach (var meshNode in hallway)
+
+                for (var i = 0; i < hallway.Count; i++)
                 {
+                    var meshNode = hallway[i];
+                    
                     var go = PlaceCube(
                         $"hallway{hallwayIndex++}",
                         hallwayCube,
