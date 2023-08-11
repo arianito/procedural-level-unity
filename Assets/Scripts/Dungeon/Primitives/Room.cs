@@ -2,19 +2,10 @@ using UnityEngine;
 
 namespace Dungeon
 {
-    public class Room
+    public class Room: ISpatialData
     {
-        public Room(Vector3Int worldPosition, Vector3 worldScale)
-        {
-            WorldPosition = worldPosition;
-            WorldScale = worldScale;
-        }
-
-        public Vector3Int WorldPosition { get; }
+        public Vector3 WorldPosition { get; }
         public Vector3 WorldScale { get; }
-
-        public Vector3Int Min => WorldPosition;
-
 
         public Vector3Int WorldScaleInt => new Vector3Int(
             Mathf.CeilToInt(WorldScale.x),
@@ -22,31 +13,28 @@ namespace Dungeon
             Mathf.CeilToInt(WorldScale.z)
         );
 
-        public Vector3Int Max => WorldPosition + WorldScaleInt;
+        public BoundingBox BBox { get; }
 
-        public Vector3 Center => WorldPosition + new Vector3(WorldScale.x, WorldScale.y, WorldScale.z) / 2.0f;
-
-
-        public BoundingBox3D BBox => new BoundingBox3D(Min, Max);
+        public Room(Vector3 worldPosition, Vector3 worldScale)
+        {
+            WorldPosition = worldPosition;
+            worldPosition.x = Mathf.FloorToInt(worldPosition.x);
+            worldPosition.y = Mathf.FloorToInt(worldPosition.y);
+            worldPosition.z = Mathf.FloorToInt(worldPosition.z);
+            WorldScale = worldScale;
+            worldScale.x = Mathf.CeilToInt(worldScale.x);
+            worldScale.z = Mathf.CeilToInt(worldScale.z);
+            BBox = new BoundingBox(worldPosition, worldPosition + worldScale);
+        }
 
         public override bool Equals(object obj)
         {
-            return obj is Room other && other.WorldPosition.Equals(WorldPosition);
+            return obj is Room other && other.BBox.Equals(BBox);
         }
 
         public override int GetHashCode()
         {
-            return WorldPosition.GetHashCode();
-        }
-
-        public bool Intersects(Room other)
-        {
-            return Max.x > other.Min.x &&
-                   Max.y > other.Min.y &&
-                   Max.z > other.Min.z &&
-                   Min.x < other.Max.x &&
-                   Min.y < other.Max.y &&
-                   Min.z < other.Max.z;
+            return BBox.GetHashCode();
         }
     }
 }

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-namespace RTree
+namespace Dungeon
 {
     public class RBush : RBush<BoundingBox>
     {
@@ -23,11 +23,13 @@ namespace RTree
         private readonly int _minEntries;
 
         private readonly IComparer<ISpatialData> _sCompareMinX =
-            Comparer<ISpatialData>.Create((x, y) => Comparer<float>.Default.Compare(x.BBox.MinX, y.BBox.MinX));
+            Comparer<ISpatialData>.Create((x, y) => Comparer<float>.Default.Compare(x.BBox.Min.x, y.BBox.Min.x));
 
         private readonly IComparer<ISpatialData> _sCompareMinY =
-            Comparer<ISpatialData>.Create((x, y) => Comparer<float>.Default.Compare(x.BBox.MinY, y.BBox.MinY));
+            Comparer<ISpatialData>.Create((x, y) => Comparer<float>.Default.Compare(x.BBox.Min.y, y.BBox.Min.y));
 
+        private readonly IComparer<ISpatialData> _sCompareMinZ =
+            Comparer<ISpatialData>.Create((x, y) => Comparer<float>.Default.Compare(x.BBox.Min.z, y.BBox.Min.z));
 
         public RBush()
             : this(DefaultMaxEntries)
@@ -73,49 +75,6 @@ namespace RTree
         {
             InsertInternal(item, Root.Height);
             Count++;
-        }
-
-        public void AddRange(IEnumerable<T> items)
-        {
-            var data = items.ToArray();
-            if (data.Length == 0) return;
-
-            if (Root.IsLeaf &&
-                Root.Items.Count + data.Length < _maxEntries)
-            {
-                foreach (var i in data)
-                    Add(i);
-                return;
-            }
-
-            if (data.Length < _minEntries)
-            {
-                foreach (var i in data)
-                    Add(i);
-                return;
-            }
-
-            var dataRoot = BuildTree(data);
-            Count += data.Length;
-
-            if (Root.Items.Count == 0)
-            {
-                Root = dataRoot;
-            }
-            else if (Root.Height == dataRoot.Height)
-            {
-                if (Root.Items.Count + dataRoot.Items.Count <= _maxEntries)
-                    foreach (var isd in dataRoot.Items)
-                        Root.Add(isd);
-                else
-                    SplitRoot(dataRoot);
-            }
-            else
-            {
-                if (Root.Height < dataRoot.Height) (Root, dataRoot) = (dataRoot, Root);
-
-                InsertInternal(dataRoot, Root.Height - dataRoot.Height);
-            }
         }
 
         public bool Remove(T item)
@@ -291,9 +250,22 @@ namespace RTree
             var splitsByX = GetPotentialSplitMargins(node.Items);
             node.Items.Sort(_sCompareMinY);
             var splitsByY = GetPotentialSplitMargins(node.Items);
-
-            if (splitsByX < splitsByY)
+            node.Items.Sort(_sCompareMinZ);
+            var splitsByZ = GetPotentialSplitMargins(node.Items);
+            
+            if (splitsByZ < splitsByX && splitsByZ < splitsByY)
+            {
+                return;
+            }
+            
+            if (splitsByX < splitsByY && splitsByX < splitsByZ)
+            {
                 node.Items.Sort(_sCompareMinX);
+            }
+            else if (splitsByY < splitsByX && splitsByY < splitsByZ)
+            {
+                node.Items.Sort(_sCompareMinY);
+            }
         }
 
         private float GetPotentialSplitMargins(List<ISpatialData> children)
@@ -335,50 +307,6 @@ namespace RTree
                 .ThenBy(x => x.totalArea)
                 .Select(x => x.i)
                 .First();
-        }
-
-
-        private RBushNode BuildTree(T[] data)
-        {
-            var treeHeight = GetDepth(data.Length);
-            var rootMaxEntries = (int)Mathf.Ceil(data.Length / Mathf.Pow(_maxEntries, treeHeight - 1));
-            return BuildNodes(new ArraySegment<T>(data), treeHeight, rootMaxEntries);
-        }
-
-        private int GetDepth(int numNodes)
-        {
-            return (int)Math.Ceiling(Math.Log(numNodes) / Math.Log(_maxEntries));
-        }
-
-        private RBushNode BuildNodes(ArraySegment<T> data, int height, int maxEntries)
-        {
-            if (data.Count <= maxEntries)
-                return height == 1
-                    ? new RBushNode(data.Cast<ISpatialData>().ToList(), height)
-                    : new RBushNode(
-                        new List<ISpatialData>
-                        {
-                            BuildNodes(data, height - 1, _maxEntries)
-                        },
-                        height);
-
-            // after much testing, this is faster than using Array.Sort() on the provided array
-            // in spite of the additional memory cost and copying. go figure!
-            var byX = new ArraySegment<T>(data.OrderBy(i => i.BBox.MinX).ToArray());
-
-            var nodeSize = (data.Count + (maxEntries - 1)) / maxEntries;
-            var subSortLength = nodeSize * (int)Math.Ceiling(Math.Sqrt(maxEntries));
-
-            var children = new List<ISpatialData>(maxEntries);
-            foreach (var subData in Chunk(byX, subSortLength))
-            {
-                var byY = new ArraySegment<T>(subData.OrderBy(d => d.BBox.MinY).ToArray());
-
-                foreach (var nodeData in Chunk(byY, nodeSize))
-                    children.Add(BuildNodes(nodeData, height - 1, _maxEntries));
-            }
-
-            return new RBushNode(children, height);
         }
 
         private static IEnumerable<ArraySegment<T>> Chunk(ArraySegment<T> values, int chunkSize)

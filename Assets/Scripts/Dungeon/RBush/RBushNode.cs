@@ -2,7 +2,7 @@
 
 using System.Collections.Generic;
 
-namespace RTree
+namespace Dungeon
 {
     public class RBushNode : ISpatialData
     {

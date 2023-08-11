@@ -1,6 +1,6 @@
 ﻿// Credits: https://github.com/viceroypenguin/RBush
 
-namespace RTree
+namespace Dungeon
 {
     public interface ISpatialData
     {

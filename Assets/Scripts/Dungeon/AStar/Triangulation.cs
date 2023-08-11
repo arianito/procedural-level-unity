@@ -6,10 +6,10 @@ namespace Dungeon
 {
     public class Triangulation
     {
-        public static BoundingBox3D CalculateBBox(List<Vector3> vertices, int offset)
+        public static BoundingBox CalculateBBox(List<Vector3> vertices, int offset)
         {
             if (vertices.Count == 0)
-                return new BoundingBox3D(Vector3.zero, Vector3.zero);
+                return new BoundingBox(Vector3.zero, Vector3.zero);
 
             var min = vertices[0];
             var max = vertices[0];
@@ -23,7 +23,7 @@ namespace Dungeon
             min -= Vector3.one * offset;
             max += Vector3.one * offset;
 
-            return new BoundingBox3D(min, max);
+            return new BoundingBox(min, max);
         }
 
         public static Triangle CalculateSupraTriangle(List<Vector3> vertices)

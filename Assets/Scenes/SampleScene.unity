@@ -346,17 +346,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   unitCube: {fileID: 2191843762893048974, guid: 1137bb64f2fddc646b49f2faf1240433, type: 3}
   hallwayCube: {fileID: 1216495933494114959, guid: 2acf6af739585114bbc622a22706f892, type: 3}
-  boundaries: {x: 40, y: 2, z: 40}
+  stairsCube: {fileID: 0}
+  boundaries: {x: 40, y: 20, z: 40}
   seed: 0
   level:
-    size: 3
-    variation: 5
-    offset: 0
-    offsetVariation: 2
+    size: 2
+    variation: 6
     height: 1
-    heightVariation: 2
-    count: 5
-    countVariation: 3
+    heightVariation: 3
+    count: 10
+    countVariation: 7
     loopChance: 4
   useKruscals: 0
 --- !u!4 &1100180828

@@ -9,7 +9,7 @@ namespace Dungeon
     {
         Empty,
         Room,
-        Hallway
+        Hallway,
     }
 
     public class MeshNode : IHeapNode<MeshNode>
@@ -17,7 +17,7 @@ namespace Dungeon
         private MeshNode _value;
         public MeshGrid Owner { get; set; }
         public Vector3Int GridIndex { get; set; }
-        public bool IsWalkable { get; set; }
+        public bool IsWalkable { get; internal set; }
 
         public NodeType Type { get; set; }
         public MeshNode Previous { get; set; }
@@ -32,14 +32,60 @@ namespace Dungeon
 
         public Vector3 Center => WorldPosition + WorldScale / 2.0f;
 
+        public MeshNode Above => Owner[GridIndex.x, GridIndex.y + 1, GridIndex.z];
+        public MeshNode Below => Owner[GridIndex.x, GridIndex.y - 1, GridIndex.z];
 
         public int HeapIndex { get; set; }
+
+        public void SetWalkable(bool walkable)
+        {
+            IsWalkable = walkable;
+        }
 
         public int CompareTo(MeshNode nodeToCompare)
         {
             var compare = FCost.CompareTo(nodeToCompare.FCost);
             if (compare == 0) compare = HCost.CompareTo(nodeToCompare.HCost);
             return compare;
+        }
+
+
+        public List<MeshNode> GetNeighbours(bool diagonals = false)
+        {
+            var offsets = diagonals
+                ? new[]
+                {
+                    new Vector3Int(-1, 0, 0),
+                    new Vector3Int(1, 0, 0),
+                    new Vector3Int(0, -1, 0),
+                    new Vector3Int(0, 1, 0),
+                    new Vector3Int(0, 0, -1),
+                    new Vector3Int(0, 0, 1),
+                    
+                    new Vector3Int(1, 0, 1),
+                    new Vector3Int(-1, 0, -1),
+                    new Vector3Int(1, 0, -1),
+                    new Vector3Int(-1, 0, 1)
+                }
+                : new[]
+                {
+                    new Vector3Int(-1, 0, 0),
+                    new Vector3Int(1, 0, 0),
+                    new Vector3Int(0, -1, 0),
+                    new Vector3Int(0, 1, 0),
+                    new Vector3Int(0, 0, -1),
+                    new Vector3Int(0, 0, 1)
+                };
+
+            return (
+                from offset in offsets
+                select GridIndex + offset
+                into final
+                select Owner[final.x, final.y, final.z]
+                into neighbour
+                where neighbour != null
+                select neighbour
+            ).ToList();
         }
 
 
@@ -53,10 +99,10 @@ namespace Dungeon
 
     public class MeshGrid
     {
-        private readonly BoundingBox3D _bbox;
+        private readonly BoundingBox _bbox;
         public readonly MeshNode[,,] Nodes;
 
-        public MeshGrid(BoundingBox3D bbox, Random random)
+        public MeshGrid(BoundingBox bbox, Random random)
         {
             Random = random;
             _bbox = bbox;
@@ -77,7 +123,7 @@ namespace Dungeon
                     IsWalkable = true,
                     GridIndex = new Vector3Int(i, j, k),
                     WorldPosition = position,
-                    WorldScale = scale
+                    WorldScale = scale,
                 };
             }
         }
@@ -87,6 +133,12 @@ namespace Dungeon
         public Random Random { get; }
 
         public int MaxSize => GridSize.x * GridSize.y * GridSize.z;
+
+
+        public MeshNode this[int i, int j, int k] => !IsValidIndices(i, j, k) ? null : Nodes[i, j, k];
+
+        public MeshNode this[Vector3Int index] =>
+            !IsValidIndices(index.x, index.y, index.z) ? null : Nodes[index.x, index.y, index.z];
 
 
         public Vector3Int WorldToNodeSpace(Vector3 position)
@@ -99,43 +151,14 @@ namespace Dungeon
             );
         }
 
-
-        public List<MeshNode> GetNeighbors(MeshNode node)
+        public bool IsValidIndices(int i, int j, int k)
         {
-            var offsets = new[]
-            {
-                new Vector3Int(-1, 0, 0),
-                new Vector3Int(1, 0, 0),
-                new Vector3Int(0, -1, 0),
-                new Vector3Int(0, 1, 0),
-                new Vector3Int(0, 0, -1),
-                new Vector3Int(0, 0, 1)
-            };
-
-            return (
-                from offset in offsets
-                select node.GridIndex + offset
-                into final
-                where final.x >= 0 &&
-                      final.x < GridSize.x &&
-                      final.y >= 0 &&
-                      final.y < GridSize.y &&
-                      final.z >= 0 &&
-                      final.z < GridSize.z
-                select Nodes[final.x, final.y, final.z]
-            ).ToList();
-        }
-
-
-        public void DebugDraw()
-        {
-            foreach (var node in Nodes)
-            {
-                Gizmos.color = node.IsWalkable
-                    ? Color.gray
-                    : Color.red;
-                node.DebugDraw();
-            }
+            return i >= 0 &&
+                   i < GridSize.x &&
+                   j >= 0 &&
+                   j < GridSize.y &&
+                   k >= 0 &&
+                   k < GridSize.z;
         }
     }
 }

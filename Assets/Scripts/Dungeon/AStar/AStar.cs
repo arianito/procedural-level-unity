@@ -28,7 +28,7 @@ namespace Dungeon
                 if (currentNode == endNode)
                     return Retrace(currentNode, startNode);
 
-                foreach (var neighbour in meshGrid.GetNeighbors(currentNode))
+                foreach (var neighbour in currentNode.GetNeighbours())
                 {
                     if (!neighbour.IsWalkable || closeSet.Contains(neighbour))
                         continue;
@@ -56,37 +56,57 @@ namespace Dungeon
             var dy = Mathf.Abs(a.Center.y - b.Center.y);
             var dz = Mathf.Abs(a.Center.z - b.Center.z);
 
-            var c1 = 0.0f;
-            var c2 = 0.0f;
-            if (dx > dy)
-            {
-                c1 = 14.0f * dy + 10 * (dx - dy);
-            }
-            else
-            {
-                c1 = 14.0f * dx + 10 * (dy - dx);
-            }
+            var xy = Mathf.Sqrt(1) * Mathf.Min(dx, dy) + Mathf.Abs(dx - dy);
+            var zy = Mathf.Sqrt(1) * Mathf.Min(dz, dy) + Mathf.Abs(dz - dy);
 
-            if (dz > dy)
-            {
-                c2 = 14.0f * dy + 10 * (dz - dy);
-            }
-            else
-            {
-                c2 = 14.0f * dz + 10 * (dy - dz);
-            }
 
-            var cost = Mathf.Min((c1 + 10 * dz), (c2 + 10 * dx));
-
+            var cost = Mathf.Min((xy + dz), (zy + dx));
             if (b.Type == NodeType.Room)
                 cost += 10;
             else if (b.Type == NodeType.Empty)
                 cost -= 5;
             else if (b.Type == NodeType.Hallway)
-                cost += 1;
-
+                cost += 2;
+            
             return cost;
         }
+
+        private static List<MeshNode> Retrace(MeshNode end, MeshNode startNode)
+        {
+            foreach (var meshNode in startNode.GetNeighbours(true))
+                meshNode.SetWalkable(false);
+
+            foreach (var meshNode in end.GetNeighbours(true))
+                meshNode.SetWalkable(false);
+
+            var nodes = new List<MeshNode>();
+            var node = end;
+            while (true)
+            {
+                node.SetWalkable(false);
+                node.Type = NodeType.Hallway;
+                if (node.Above != null)
+                {
+                    node.Above.SetWalkable(false);
+                    node.Above.Type = NodeType.Hallway;
+                }
+                
+                if (node.Below != null)
+                {
+                    node.Below.SetWalkable(false);
+                    node.Below.Type = NodeType.Hallway;
+                }
+
+                nodes.Add(node);
+                if (node == startNode) break;
+
+                node = node.Previous;
+            }
+
+            nodes.Reverse();
+            return nodes;
+        }
+
 
         public static List<MeshNode> GetAllSockets(MeshGrid grid, Room a)
         {
@@ -94,58 +114,37 @@ namespace Dungeon
             var pos = grid.WorldToNodeSpace(a.WorldPosition);
 
             int nx, nz;
+            MeshNode tmp;
             for (var x = 0; x < a.WorldScale.x; x++)
             {
                 nx = pos.x + x;
                 nz = pos.z - 1;
-                if (
-                    nx >= 0 && nx < grid.GridSize.x &&
-                    nz >= 0 && nz < grid.GridSize.z
-                )
-                {
-                    var node = grid.Nodes[nx, pos.y, nz];
-                    if (node.IsWalkable)
-                        nodes.Add(node);
-                }
+
+                tmp = grid[nx, pos.y, nz];
+                if (tmp != null && tmp.IsWalkable)
+                    nodes.Add(tmp);
 
                 nx = pos.x + x;
                 nz = pos.z + a.WorldScaleInt.z;
-                if (
-                    nx >= 0 && nx < grid.GridSize.x &&
-                    nz >= 0 && nz < grid.GridSize.z
-                )
-                {
-                    var node = grid.Nodes[nx, pos.y, nz];
-                    if (node.IsWalkable)
-                        nodes.Add(node);
-                }
+
+                tmp = grid[nx, pos.y, nz];
+                if (tmp != null && tmp.IsWalkable)
+                    nodes.Add(tmp);
             }
 
             for (var z = 0; z < a.WorldScale.z; z++)
             {
                 nx = pos.x - 1;
                 nz = pos.z + z;
-                if (
-                    nx >= 0 && nx < grid.GridSize.x &&
-                    nz >= 0 && nz < grid.GridSize.z
-                )
-                {
-                    var node = grid.Nodes[nx, pos.y, nz];
-                    if (node.IsWalkable)
-                        nodes.Add(node);
-                }
+                tmp = grid[nx, pos.y, nz];
+                if (tmp != null && tmp.IsWalkable)
+                    nodes.Add(tmp);
 
                 nx = pos.x + a.WorldScaleInt.x;
                 nz = pos.z + z;
-                if (
-                    nx >= 0 && nx < grid.GridSize.x &&
-                    nz >= 0 && nz < grid.GridSize.z
-                )
-                {
-                    var node = grid.Nodes[nx, pos.y, nz];
-                    if (node.IsWalkable)
-                        nodes.Add(node);
-                }
+                tmp = grid[nx, pos.y, nz];
+                if (tmp != null && tmp.IsWalkable)
+                    nodes.Add(tmp);
             }
 
             return nodes;
@@ -164,7 +163,7 @@ namespace Dungeon
                 foreach (var nodeB in nodesB)
                 {
                     var distance = Vector3.Distance(nodeA.WorldPosition, nodeB.WorldPosition);
-                    if (!(distance < minDist)) continue;
+                    if (distance >= minDist) continue;
 
                     minDist = distance;
                     nodes[0] = nodeA;
@@ -172,49 +171,6 @@ namespace Dungeon
                 }
             }
 
-            return nodes;
-        }
-
-        public static MeshNode GetSocketFacing(MeshGrid grid, Room a, Vector3 b)
-        {
-            var sockets = GetAllSockets(grid, a);
-            if (sockets.Count == 0)
-                return null;
-
-            var dir = (b - a.WorldPosition).normalized;
-            var center = new Vector3(a.Center.x, a.WorldPosition.y + 0.5f, a.Center.z);
-            MeshNode candidate = null;
-            var minValue = -1f;
-            foreach (var socket in sockets)
-            {
-                var sc = socket.WorldPosition + socket.WorldScale / 2;
-                var normal = (sc - center).normalized;
-                var scale = Mathf.Clamp01(Vector3.Dot(dir, normal));
-
-                if (!(scale > minValue)) continue;
-
-                minValue = scale;
-                candidate = socket;
-            }
-
-            return candidate;
-        }
-
-        private static List<MeshNode> Retrace(MeshNode end, MeshNode startNode)
-        {
-            var nodes = new List<MeshNode>();
-            var node = end;
-            while (true)
-            {
-                node.IsWalkable = false;
-                node.Type = NodeType.Hallway;
-                nodes.Add(node);
-                if (node == startNode) break;
-
-                node = node.Previous;
-            }
-
-            nodes.Reverse();
             return nodes;
         }
 
@@ -226,9 +182,12 @@ namespace Dungeon
                 var pos = grid.WorldToNodeSpace(room.WorldPosition);
 
                 for (var i = 0; i < size.x; i++)
-                for (var j = 0; j < size.y; j++)
+                for (var j = -1; j < size.y; j++)
                 for (var k = 0; k < size.z; k++)
-                    grid.Nodes[pos.x + i, pos.y + j, pos.z + k].IsWalkable = false;
+                {
+                    var node = grid[pos.x + i, pos.y + j, pos.z + k];
+                    node?.SetWalkable(false);
+                }
             }
         }
     }
